@@ -1,0 +1,111 @@
+<dependency>
+    <groupId>com.google.code.gson</groupId>
+    <artifactId>gson</artifactId>
+    <version>2.8.6</version>
+</dependency>
+
+
+{
+  "environments": [
+    {
+      "name": "env1",
+      "types": [
+        {
+          "captureType": "HC",
+          "commands": ["8", "Region1", "Control", "wenable_trace label1", "q", "Control", "nview_trace"]
+        },
+        {
+          "captureType": "NHC",
+          "commands": ["8", "Region1", "Control", "wenable_trace label2", "q", "Control", "nview_trace"]
+        }
+      ]
+    },
+    {
+      "name": "env3",
+      "types": [
+        {
+          "captureType": "HC",
+          "commands": ["11", "Region2", "Control", "wenable_trace label3", "q", "Control", "nview_trace"]
+        },
+        {
+          "captureType": "NHC",
+          "commands": ["11", "Region2", "Control", "wenable_trace label4", "q", "Control", "nview_trace"]
+        }
+      ]
+    }
+  ]
+}
+
+
+
+import com.google.gson.Gson;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.Session;
+import com.jcraft.jsch.ChannelExec;
+import java.io.FileReader;
+import java.util.List;
+import java.util.Properties;
+
+public class ConfigurablePlinkExecutor {
+    static class Environment {
+        String name;
+        List<CaptureType> types;
+    }
+
+    static class CaptureType {
+        String captureType;
+        List<String> commands;
+    }
+
+    public static void main(String[] args) {
+        try {
+            // Load the configuration from JSON file
+            Gson gson = new Gson();
+            Environment[] environments = gson.fromJson(new FileReader("config.json"), Environment[].class);
+
+            // Example: dynamically determine which environment and captureType to use
+            String selectedEnv = "env1";
+            String selectedType = "HC";
+
+            for (Environment env : environments) {
+                if (env.name.equals(selectedEnv)) {
+                    for (CaptureType type : env.types) {
+                        if (type.captureType.equals(selectedType)) {
+                            executeCommands(type.commands);
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("An error occurred while processing the configuration.");
+            e.printStackTrace();
+        }
+    }
+
+    private static void executeCommands(List<String> commands) {
+        try {
+            JSch jsch = new JSch();
+            Session session = jsch.getSession("user", "hostname", 22);
+            session.setPassword("password");
+            Properties config = new Properties();
+            config.put("StrictHostKeyChecking", "no");
+            session.setConfig(config);
+            session.connect();
+
+            for (String command : commands) {
+                System.out.println("Executing command: " + command);
+                ChannelExec channel = (ChannelExec) session.openChannel("exec");
+                channel.setCommand(command);
+                channel.connect();
+                channel.disconnect();
+            }
+
+            session.disconnect();
+        } catch (Exception e) {
+            System.err.println("An error occurred during SSH command execution.");
+            e.printStackTrace();
+        }
+    }
+}
