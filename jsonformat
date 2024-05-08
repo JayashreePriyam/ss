@@ -1,111 +1,156 @@
-<dependency>
-    <groupId>com.google.code.gson</groupId>
-    <artifactId>gson</artifactId>
-    <version>2.8.6</version>
-</dependency>
+package com.gbscaf.commonutils.FrontEndLogValidator.rough;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class ConfigReader {
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class EnvironmentWrapper {
+        private List<Environment> getEnvironments() {
+            return environments;
+        }
+        public void setEnvironments(List<Environment> environments) {
+            this.environments = environments;
+        }
+        @JsonProperty("environments")
+        private List<Environment> environments;
+        public EnvironmentWrapper()
+        {
+        }
+    }
+
+ public static class Environment{
+     public String getName() {
+         return name;
+     }
+     public void setName(String name) {
+         this.name = name;
+     }
+     public List<CaptureType> getCaptureType() {
+         return captureTypes;
+     }
+     public void setCaptureType(List<CaptureType> captureType) {
+         this.captureTypes = captureType;
+     }
+     @JsonProperty("name")
+     private String name;
+     @JsonProperty("captureType")
+     private List<CaptureType> captureTypes;
+     public Environment(){
+     }
+
+ }
+
+ public static class CaptureType{
+
+     public String getType() {
+         return type;
+     }
+
+
+     public void setType(String type) {
+         this.type = type;
+     }
+     @JsonProperty("type")
+     private String type;
+     public Detail getDetails() {
+         return details;
+     }
+     public void setDetails(Detail details) {
+         this.details = details;
+     }
+
+     @JsonProperty("details")
+     private Detail details;
+}
+ public class Detail{
+     public String getNo() {
+         return no;
+     }
+
+     public void setNo(String no) {
+         this.no = no;
+     }
+     @JsonProperty("no")
+     private String no;
+     @JsonProperty("region")
+     private String region;
+     @JsonProperty("label")
+     private String label;
+     @JsonProperty("commands")
+     private List<String> commands;
+ }
+    public static void main(String[] args) throws IOException {
+  //  try{
+     String environmentName = "qa";
+     String capureTypeName = "HC";
+
+        ObjectMapper mapper=new ObjectMapper();
+        Environment env;
+  //      try {
+            EnvironmentWrapper config = mapper.readValue(new File("C:\\Users\\fal7g81\\Documents\\GBSCAFCore\\src\\test\\java\\com\\gbscaf\\commonutils\\FrontEndLogValidator\\rough\\Config.json"),EnvironmentWrapper.class);
+
+//            env = config.getEnvironments()
+//                    .stream()
+//                    .filter(e -> e.getName().equalsIgnoreCase(environmentName))
+//                    .findFirst().orElseThrow(() -> new RuntimeException("Environment not found"));
+//        } catch (IOException e) {
+//            System.out.println("environment not found");
+//            throw new RuntimeException(e);
+//        }
+            System.out.println("avail env");
+
+            config.getEnvironments().forEach(environment -> System.out.println(environment.getName()));
+            System.out.println("looking for rnv "+environmentName);
+
+//       CaptureType captureType =  env.getCaptureType().stream().filter(ct -> ct.type.equalsIgnoreCase(capureTypeName))
+//                .findFirst().orElseThrow(() -> new RuntimeException("Capture type not found"));
+//
+//        executeCommands(captureType.details.commands);
+//    }
+//    catch(Exception e){
+//        System.out.println("capture type not found");
+//        e.printStackTrace();
+//    }
+    }
+    private static void executeCommands(List<String> commands){
+        System.out.println(commands);
+    }
+}
 
 
 {
   "environments": [
     {
-      "name": "env1",
-      "types": [
+      "name": "qa",
+      "captureType": [
         {
-          "captureType": "HC",
-          "commands": ["8", "Region1", "Control", "wenable_trace label1", "q", "Control", "nview_trace"]
-        },
-        {
-          "captureType": "NHC",
-          "commands": ["8", "Region1", "Control", "wenable_trace label2", "q", "Control", "nview_trace"]
-        }
-      ]
-    },
-    {
-      "name": "env3",
-      "types": [
-        {
-          "captureType": "HC",
-          "commands": ["11", "Region2", "Control", "wenable_trace label3", "q", "Control", "nview_trace"]
-        },
-        {
-          "captureType": "NHC",
-          "commands": ["11", "Region2", "Control", "wenable_trace label4", "q", "Control", "nview_trace"]
+          "type": "HC",
+          "details": {
+            "no": "8",
+            "region": "nash2",
+            "label": "IP6K",
+            "commands": [
+              "8",
+              "nash2",
+              "gentrace -v -d IP6K ISO63T -num 1",
+              "q",
+              "gentrace -v -d IP6K ISO63T -num 1",
+              "q",
+              "gentrace -v -d IP6K ISO63T -num 1",
+              "q",
+              "exit",
+              "exit",
+              "exit"
+            ]
+          }
         }
       ]
     }
   ]
-}
-
-
-
-import com.google.gson.Gson;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.Session;
-import com.jcraft.jsch.ChannelExec;
-import java.io.FileReader;
-import java.util.List;
-import java.util.Properties;
-
-public class ConfigurablePlinkExecutor {
-    static class Environment {
-        String name;
-        List<CaptureType> types;
-    }
-
-    static class CaptureType {
-        String captureType;
-        List<String> commands;
-    }
-
-    public static void main(String[] args) {
-        try {
-            // Load the configuration from JSON file
-            Gson gson = new Gson();
-            Environment[] environments = gson.fromJson(new FileReader("config.json"), Environment[].class);
-
-            // Example: dynamically determine which environment and captureType to use
-            String selectedEnv = "env1";
-            String selectedType = "HC";
-
-            for (Environment env : environments) {
-                if (env.name.equals(selectedEnv)) {
-                    for (CaptureType type : env.types) {
-                        if (type.captureType.equals(selectedType)) {
-                            executeCommands(type.commands);
-                            break;
-                        }
-                    }
-                    break;
-                }
-            }
-        } catch (Exception e) {
-            System.err.println("An error occurred while processing the configuration.");
-            e.printStackTrace();
-        }
-    }
-
-    private static void executeCommands(List<String> commands) {
-        try {
-            JSch jsch = new JSch();
-            Session session = jsch.getSession("user", "hostname", 22);
-            session.setPassword("password");
-            Properties config = new Properties();
-            config.put("StrictHostKeyChecking", "no");
-            session.setConfig(config);
-            session.connect();
-
-            for (String command : commands) {
-                System.out.println("Executing command: " + command);
-                ChannelExec channel = (ChannelExec) session.openChannel("exec");
-                channel.setCommand(command);
-                channel.connect();
-                channel.disconnect();
-            }
-
-            session.disconnect();
-        } catch (Exception e) {
-            System.err.println("An error occurred during SSH command execution.");
-            e.printStackTrace();
-        }
-    }
 }
